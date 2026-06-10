@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.DS_Store
+.env
+.env.*
+!.env.example
+coverage/
+frontend/.vite/
+frontend/node_modules/.tmp/
+backend/node_modules/.tmp/
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/sample.csv
+Datasets/

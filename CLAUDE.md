@@ -1,0 +1,520 @@
+# Project Overview
+
+This project is an educational and portfolio-focused web application that visually demonstrates the Reservoir Sampling algorithm on streaming data.
+
+The objective is not simply to sample data, but to allow users to observe how the algorithm behaves in real time while processing large files one item at a time.
+
+The application should feel like a streaming system, even though the input initially comes from uploaded CSV or DAT files.
+
+---
+
+# Technology Stack
+
+Frontend:
+
+* React
+* TypeScript
+* Vite
+* TailwindCSS
+* Socket.IO Client
+
+Backend:
+
+* Node.js
+* Express
+* TypeScript
+* Socket.IO
+* Multer
+* EventEmitter
+* Jest for testing
+
+---
+
+# Current Architecture
+
+```text
+CSV/DAT File
+      │
+      ▼
+SimulationEngine
+      │
+      ▼
+ReservoirSamplingService
+      │
+      ▼
+EventEmitter
+      │
+      ▼
+Socket.IO Server
+      │
+      ▼
+React Frontend
+      │
+      ▼
+UI Components
+```
+
+The backend owns all simulation state.
+
+The frontend never executes the reservoir sampling algorithm. It simply displays events received from the backend.
+
+---
+
+# Project Structure
+
+There are two main folders:
+
+```text
+frontend/
+backend/
+```
+
+Frontend contains:
+
+* React application
+* UI components
+* Socket.IO client
+* State management
+
+Backend contains:
+
+* Express server
+* Upload API
+* ReservoirSamplingService
+* SimulationEngine
+* Socket.IO server
+
+---
+
+# ReservoirSamplingService
+
+This is a standalone algorithm implementation.
+
+Responsibilities:
+
+* Maintain reservoir of size K.
+* Process one incoming item at a time.
+* Maintain processed item count.
+* Return structured events:
+
+  * accepted
+  * replaced
+  * rejected
+* Never store the full dataset.
+* Memory complexity should remain O(K).
+
+Public methods:
+
+```typescript
+processItem(item)
+
+getReservoir()
+
+getProcessedCount()
+
+reset()
+```
+
+This service is already implemented and tested.
+
+---
+
+# SimulationEngine
+
+This simulates streaming data.
+
+Responsibilities:
+
+* Read CSV/DAT files line by line.
+* Feed each line into ReservoirSamplingService.
+* Support:
+
+  * start()
+  * pause()
+  * resume()
+  * stop()
+  * setSpeed()
+
+The engine emits events through EventEmitter.
+
+Available events:
+
+* SIMULATION_STARTED
+* ITEM_RECEIVED
+* ITEM_ACCEPTED
+* ITEM_REPLACED
+* ITEM_REJECTED
+* SIMULATION_PAUSED
+* SIMULATION_RESUMED
+* SIMULATION_COMPLETED
+* SIMULATION_STOPPED
+
+This component is already implemented.
+
+---
+
+# Socket.IO Layer
+
+Socket.IO is the bidirectional communication layer between backend and frontend.
+
+Server → client:
+
+* SERVER_READY (on connect)
+* SIMULATION_STARTED / ITEM_RECEIVED / ITEM_ACCEPTED / ITEM_REPLACED / ITEM_REJECTED
+* SIMULATION_PAUSED / SIMULATION_RESUMED
+* SIMULATION_COMPLETED / SIMULATION_STOPPED / SIMULATION_RESET
+
+Client → server (control plane):
+
+* START_SIMULATION { uploadId?, k, speed }
+* PAUSE_SIMULATION
+* RESUME_SIMULATION
+* RESET_SIMULATION
+* SET_SPEED { speed }
+
+The backend instantiates one SimulationEngine per socket connection on START_SIMULATION, attaches event forwarders, and tears them down on RESET or disconnect. On RESET the forwarders are detached before the engine is stopped so no spurious SIMULATION_STOPPED is emitted.
+
+---
+
+# Upload API
+
+Implemented endpoint:
+
+POST
+
+```text
+/api/upload
+```
+
+Supports:
+
+* .csv
+* .dat
+
+Maximum file size:
+
+* 1 GB
+
+Returns:
+
+```json
+{
+  "uploadId": "...",
+  "fileName": "...",
+  "fileSize": ...
+}
+```
+
+Files are stored temporarily inside the uploads directory. The backend keeps an in-memory uploadId → file path map populated on each successful upload.
+
+When the client emits START_SIMULATION with an uploadId, the backend resolves it to the stored file path and streams from that file. If no uploadId is provided (or it is unknown to this server process), the simulation falls back to sample.csv.
+
+---
+
+# Frontend UI
+
+The UI already contains:
+
+## Control Panel
+
+* File picker
+* K input
+* Start button
+* Pause button
+* Resume button
+* Reset button
+* Speed selector
+
+---
+
+## Incoming Stream Panel
+
+Displays the most recently processed items.
+
+Only a small rolling window should be shown (for example, last 10 items).
+
+---
+
+## Reservoir Panel
+
+Displays the current reservoir contents.
+
+Should dynamically update whenever items are accepted or replaced.
+
+The layout should support larger K values.
+
+---
+
+## Statistics Panel
+
+Displays:
+
+* Processed Items
+* Reservoir Size
+* Current Item
+* Simulation Status
+
+---
+
+## Event Log Panel
+
+Displays recent actions:
+
+Example:
+
+```text
+Simulation Started
+
+Accepted 1
+
+Rejected 12
+
+Replaced slot 3 with 21
+
+Simulation Completed
+```
+
+Only the most recent events should be kept.
+
+---
+
+# Current Development State
+
+Completed:
+
+* Full project structure
+* React UI layout
+* Express backend
+* File upload API
+* ReservoirSamplingService
+* Unit tests
+* SimulationEngine
+* Backend event system
+* Socket.IO integration
+* Frontend receives live events
+* UI updates from Socket.IO events
+* User-controlled simulation (Start / Pause / Resume / Reset / live speed)
+* K input gated to Idle/Completed/Stopped; Speed editable live
+* Per-socket SimulationEngine lifecycle and SIMULATION_RESET event
+* Upload-driven simulation source resolution via uploadId
+* Light, soft UI theme (Inter, slate/mint/honey palette) with slot-flash animations
+
+---
+
+# Phase 7 [completed]
+
+Convert the application into a fully user-controlled simulation.
+
+Required features:
+
+1. Start Simulation
+2. Pause Simulation
+3. Resume Simulation
+4. Reset Simulation
+5. K input controls reservoir size
+6. Speed selector controls simulation speed
+7. Status badge updates automatically
+8. Event log updates automatically
+9. Current item display updates automatically
+10. Proper button enable/disable states
+
+The simulation should only start when the user clicks Start.
+
+Redesign the UI of the Reservoir Sampling Visualizer to have a clean, modern, educational appearance.
+
+Design goals:
+
+* Minimalistic
+* Soft colors
+* Easy on the eyes
+* Professional SaaS dashboard aesthetic
+* Similar visual style to Notion, Linear, Stripe Dashboard, or modern Apple interfaces
+
+Theme:
+
+Background:
+
+* #F8FAFC
+
+Cards:
+
+* White (#FFFFFF)
+* Rounded corners (16px)
+* Thin border (#E5E7EB)
+* Very subtle shadow
+
+Typography:
+
+* Use Inter font
+* Dark gray text (#1F2937)
+* Secondary text (#6B7280)
+
+Accent Colors:
+
+* Incoming Stream: #5FA8A6
+* Reservoir: #6B8CAF
+* Accepted item animation: #A8D5BA
+* Replaced item animation: #E9C46A
+* Rejected item: #D6D9DC
+
+Remove:
+
+* Neon colors
+* Heavy gradients
+* Strong glowing effects
+* Hacker-style dark dashboard appearance
+
+Layout:
+
+* Light page background
+* Each section inside individual white cards
+* Generous spacing between components
+* Consistent padding and alignment
+
+Animations:
+
+* Smooth fade and scale transitions
+* Subtle hover effects
+
+---
+
+# phase 8 (current)
+Improve the Reservoir panel UI to properly support long dataset records (for example, movie titles).
+
+Current problem:
+
+* Entire raw dataset rows are rendered directly inside small reservoir cards.
+* Long strings wrap aggressively and make the layout cluttered.
+* Reservoir visualization should emphasize the sampling algorithm, not the raw CSV formatting.
+
+Goals:
+
+* Clean, modern appearance.
+* Uniform card sizes.
+* Preserve access to the full record.
+* Work well for arbitrary CSV/DAT datasets.
+
+Implement the following:
+
+1. Reservoir Card Layout
+
+* Change reservoir cards from tall/narrow to wider landscape cards.
+
+* Use a responsive CSS grid:
+
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+
+* Keep all cards the same height (approximately 100-120px).
+
+2. Display a Preview Instead of the Full Raw Record
+
+Each card should display:
+
+* Slot number (#1, #2, etc.)
+* A shortened label for the item.
+
+Create a helper function:
+
+getDisplayLabel(item: string): string
+
+Rules:
+
+* Trim whitespace.
+* Collapse multiple spaces.
+* Limit visible text to roughly 24-30 characters.
+* If longer, append "...".
+
+Example:
+
+Raw:
+19%Ace Ventura: When Nature Calls (1995)
+
+Display:
+19% Ace Ventura: When...
+
+3. Full Record Access
+
+Add a tooltip (title attribute is acceptable initially).
+
+Hovering over a card should reveal the complete original record.
+
+Example:
+
+<div title={fullRecord}>
+  {displayLabel}
+</div>
+
+4. Better Text Styling
+
+For the preview text:
+
+* font-weight: 600
+* center aligned
+* vertically centered
+* line-height around 1.3
+
+Prevent ugly word splitting:
+
+* word-break: break-word;
+* overflow-wrap: anywhere;
+
+Do NOT allow text to overflow outside the card.
+
+5. Current Item Panel
+
+Apply the same preview formatting.
+
+Show:
+
+Current Item
+
+19% Ace Ventura: When...
+
+Add a small "Raw Record" expandable section or tooltip containing the full text.
+
+6. Reservoir Header
+
+Keep:
+
+Reservoir
+10 of 10 slots filled
+
+Remove any unnecessary decorative elements that do not add value.
+
+7. Preserve Functionality
+
+Do NOT change:
+
+* Reservoir sampling algorithm
+* Socket.IO events
+* Backend payloads
+* Simulation logic
+
+This is purely a presentation-layer improvement.
+
+8. Optional Enhancement
+
+If the incoming record appears to follow the MovieLens format:
+
+19%Ace Ventura: When Nature Calls (1995)
+
+attempt to extract a cleaner title for display:
+
+Ace Ventura: When Nature Calls
+
+while still preserving the original raw record for the tooltip.
+
+Do not fail if parsing is impossible; simply fall back to the truncated raw string.
+
+
+# Development Guidelines
+
+* Preserve the existing architecture.
+* Backend remains the source of truth.
+* Frontend should never implement reservoir sampling logic.
+* Prefer small, incremental changes.
+* Do not perform large refactors unless explicitly requested.
+* Keep code modular and maintainable.
+* Existing functionality should not be broken while implementing new features.
+
+When making changes, first understand the existing codebase and extend it rather than replacing working implementations.
