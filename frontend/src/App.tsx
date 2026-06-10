@@ -910,7 +910,6 @@ function App() {
       }
 
       setUploadId(payload.uploadId);
-      // console.log("Setting uploadId:", payload.uploadId);
       setUploadedFileName(payload.fileName);
       setUploadMessage({
         type: 'success',
@@ -927,8 +926,6 @@ function App() {
   };
 
   const handleStart = () => {
-  // console.log(uploadId);
-  //   console.log("Current uploadId:", uploadId);
     socketRef.current?.emit('START_SIMULATION', {
       uploadId: uploadId ?? undefined,
       k: targetK,

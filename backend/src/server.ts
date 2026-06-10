@@ -14,8 +14,7 @@ import {
 } from './services/SimulationEngine.js';
 
 const port = Number(process.env.PORT ?? 3001);
-const clientUrl = process.env.CLIENT_URL ?? 'http://localhost:5173';
-const corsOrigin: string | boolean = process.env.CLIENT_URL ? clientUrl : true;
+const corsOrigin: string | boolean = process.env.CLIENT_URL ?? true;
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const uploadDirectory = path.resolve(currentDirectory, '../uploads');
 const sampleCsvPath = path.join(uploadDirectory, 'sample.csv');
@@ -190,7 +189,6 @@ io.on('connection', (socket) => {
       Number.isFinite(payload.speed) ? Number(payload.speed) : defaultSpeed
     );
     const filePath = resolveSourcePath(payload.uploadId);
-    //console.log("Resolved file:", filePath);
 
     teardownEngine();
 

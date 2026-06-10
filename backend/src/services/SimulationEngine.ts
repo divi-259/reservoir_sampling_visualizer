@@ -18,37 +18,37 @@ export const SimulationEvents = {
 export type SimulationEventName =
   (typeof SimulationEvents)[keyof typeof SimulationEvents];
 
-export type SimulationStatus =
+type SimulationStatus =
   | 'idle'
   | 'running'
   | 'paused'
   | 'completed'
   | 'stopped';
 
-export type SimulationEngineOptions = {
+type SimulationEngineOptions = {
   filePath: string;
   k: number;
   speed?: number;
   reservoirService?: ReservoirSamplingService<string>;
 };
 
-export type SimulationStartedPayload = {
+type SimulationStartedPayload = {
   filePath: string;
   k: number;
   speed: number;
 };
 
-export type ItemReceivedPayload = {
+type ItemReceivedPayload = {
   item: string;
   processedCount: number;
 };
 
-export type SimulationCompletedPayload = {
+type SimulationCompletedPayload = {
   processedCount: number;
   reservoir: string[];
 };
 
-export type SimulationStoppedPayload = {
+type SimulationStoppedPayload = {
   processedCount: number;
   reservoir: string[];
 };

@@ -1,5 +1,3 @@
-export type ReservoirEventType = 'accepted' | 'replaced' | 'rejected';
-
 export type ReservoirEvent<T> =
   | {
       type: 'accepted';
