@@ -22,9 +22,9 @@ const maxUploadSizeBytes = 50 * 1024 * 1024;
 const allowedExtensions = new Set(['.csv', '.dat']);
 const simulationSocketEvents = Object.values(SimulationEvents);
 
-const defaultSpeed = 4;
+const defaultSpeed = 2;
 const minSpeed = 0.25;
-const maxSpeed = 64;
+const maxSpeed = 100;
 const defaultK = 10;
 
 const app = express();

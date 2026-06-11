@@ -298,6 +298,9 @@ Completed:
 * Per-socket SimulationEngine lifecycle and SIMULATION_RESET event
 * Upload-driven simulation source resolution via uploadId
 * Light, soft UI theme (Inter, slate/mint/honey palette) with slot-flash animations
+* Reservoir / Current Item preview formatting with MovieLens-aware label trimming and full-record tooltips
+* Download Sample button (CSV / DAT) for exporting the current reservoir contents
+* Extended speed selector (0.25× through 100×, including 16×/32×/64×)
 
 ---
 
@@ -378,7 +381,7 @@ Animations:
 
 ---
 
-# phase 8 (current)
+# Phase 8 [completed]
 Improve the Reservoir panel UI to properly support long dataset records (for example, movie titles).
 
 Current problem:
@@ -518,3 +521,276 @@ Do not fail if parsing is impossible; simply fall back to the truncated raw stri
 * Existing functionality should not be broken while implementing new features.
 
 When making changes, first understand the existing codebase and extend it rather than replacing working implementations.
+
+
+# Phase 9 (current)
+
+Add export and high-speed playback to the Reservoir Sampling Visualizer.
+
+## Feature 1: Download Current Reservoir Sample
+
+### Goal
+
+Allow the user to download the current contents of the reservoir at any time during or after the simulation.
+
+This should export exactly the items currently present in the reservoir, not the entire dataset.
+
+---
+
+### UI Changes
+
+Add a new button near the simulation controls:
+
+```text
+Download Sample
+```
+
+The button should be enabled when:
+
+* Reservoir contains at least one item.
+
+The button should be disabled when:
+
+* Reservoir is empty.
+
+---
+
+### Download Format Selection
+
+Add a dropdown next to the Download button:
+
+```text
+CSV
+DAT
+```
+
+Default:
+
+```text
+CSV
+```
+
+User selects the desired export format before downloading.
+
+---
+
+### Export Behavior
+
+#### CSV Export
+
+Generate:
+
+```csv
+item
+Ace Ventura: When Nature Calls (1995)
+Jumanji (1995)
+Grumpier Old Men (1995)
+...
+```
+
+Requirements:
+
+* Include a header row.
+* Escape commas and quotes correctly.
+* Preserve original item text.
+
+Filename format:
+
+```text
+reservoir-sample-k10.csv
+```
+
+where:
+
+```text
+k = current reservoir size
+```
+
+---
+
+#### DAT Export
+
+Generate:
+
+```text
+Ace Ventura: When Nature Calls (1995)
+Jumanji (1995)
+Grumpier Old Men (1995)
+...
+```
+
+Requirements:
+
+* One record per line.
+* No header row.
+* Preserve original item text.
+
+Filename format:
+
+```text
+reservoir-sample-k10.dat
+```
+
+---
+
+### Implementation
+
+Do NOT send data back to the backend.
+
+Use the existing reservoir state already present in React.
+
+Generate the file entirely in the frontend using:
+
+* Blob
+* URL.createObjectURL
+* Programmatic download
+
+This feature should work while the simulation is:
+
+* Running
+* Paused
+* Completed
+
+The exported file should always contain the latest reservoir contents currently displayed.
+
+---
+
+## Feature 2: Additional Speed Levels
+
+### Goal
+
+Add higher playback speeds for large datasets.
+
+Current speeds:
+
+* 0.25x
+* 0.5x
+* 1x
+* 2x
+* 5x
+* 10x
+* 100x
+
+Add:
+
+* 16x
+* 32x
+* 64x
+
+Updated speed list:
+
+* 0.25x
+* 0.5x
+* 1x
+* 2x
+* 5x
+* 10x
+* 16x
+* 32x
+* 64x
+* 100x
+
+---
+
+### Backend Requirements
+
+Ensure:
+
+```ts
+engine.setSpeed(speed)
+```
+
+accepts the new values.
+
+No hardcoded speed validation should reject:
+
+```text
+16
+32
+64
+```
+
+---
+
+### Frontend Requirements
+
+Update the speed selector.
+
+Display:
+
+```text
+0.25× / sec
+0.5× / sec
+1× / sec
+2× / sec
+5× / sec
+10× / sec
+16× / sec
+32× / sec
+64× / sec
+100× / sec
+```
+
+Preserve existing speed-change behavior.
+
+---
+
+## UX Requirements
+
+* Download button should visually match existing controls.
+* Export format selector should be compact.
+* Download action should be instant.
+* No page refresh.
+* No backend API required.
+
+---
+
+## Testing Requirements
+
+### Download CSV
+
+Run simulation.
+
+Click Download Sample.
+
+Verify:
+
+* CSV downloads successfully.
+* Number of rows equals current reservoir size.
+* Content matches displayed reservoir.
+
+### Download DAT
+
+Run simulation.
+
+Click Download Sample.
+
+Select DAT.
+
+Verify:
+
+* DAT downloads successfully.
+* One record per line.
+* Content matches displayed reservoir.
+
+### Speed Validation
+
+Run simulation.
+
+Switch between:
+
+* 16x
+* 32x
+* 64x
+
+Verify:
+
+* Simulation accelerates correctly.
+* No console errors.
+* Statistics continue updating normally.
+
+Do not modify the reservoir sampling algorithm.
+
+Do not change Socket.IO event contracts.
+
+Only implement download/export functionality and additional speed levels.

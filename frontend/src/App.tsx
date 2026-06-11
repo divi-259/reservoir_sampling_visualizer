@@ -79,8 +79,10 @@ const simulationSocketEvents = [
   'SIMULATION_RESET'
 ] as const;
 
-const speedOptions = [0.5, 1, 2, 4, 8] as const;
-const defaultSpeed = 4;
+const speedOptions = [0.25, 0.5, 1, 2, 5, 10, 16, 32, 64, 100] as const;
+const defaultSpeed = 2;
+const downloadFormats = ['csv', 'dat'] as const;
+type DownloadFormat = (typeof downloadFormats)[number];
 const defaultK = 10;
 const minK = 1;
 const maxK = 1000;
@@ -145,6 +147,39 @@ function formatFileSize(bytes: number) {
   }
 
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+function escapeCsvValue(value: string): string {
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function buildReservoirExport(items: string[], format: DownloadFormat): string {
+  if (format === 'csv') {
+    return ['item', ...items.map(escapeCsvValue)].join('\r\n');
+  }
+  return items.join('\n');
+}
+
+function downloadReservoirSample(
+  items: string[],
+  targetK: number,
+  format: DownloadFormat
+) {
+  const content = buildReservoirExport(items, format);
+  const mimeType = format === 'csv' ? 'text/csv;charset=utf-8' : 'text/plain;charset=utf-8';
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `reservoir-sample-k${targetK}.${format}`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 async function parseUploadResponse(response: Response) {
@@ -252,14 +287,18 @@ function ControlBar({
   kInput,
   kEditable,
   speed,
+  downloadFormat,
   canStart,
   canPause,
   canResume,
   canReset,
+  canDownload,
   onFileChange,
   onUpload,
   onKChange,
   onSpeedChange,
+  onDownloadFormatChange,
+  onDownloadSample,
   onStart,
   onPause,
   onResume,
@@ -274,14 +313,18 @@ function ControlBar({
   kInput: number;
   kEditable: boolean;
   speed: number;
+  downloadFormat: DownloadFormat;
   canStart: boolean;
   canPause: boolean;
   canResume: boolean;
   canReset: boolean;
+  canDownload: boolean;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onUpload: () => void;
   onKChange: (value: number) => void;
   onSpeedChange: (value: number) => void;
+  onDownloadFormatChange: (value: DownloadFormat) => void;
+  onDownloadSample: () => void;
   onStart: () => void;
   onPause: () => void;
   onResume: () => void;
@@ -363,6 +406,30 @@ function ControlBar({
         </PrimaryButton>
         <PrimaryButton tone="danger" onClick={onReset} disabled={!canReset}>
           Reset
+        </PrimaryButton>
+
+        <span aria-hidden className="hidden h-6 w-px bg-slate-200 sm:inline-block" />
+
+        <select
+          value={downloadFormat}
+          onChange={(event) =>
+            onDownloadFormatChange(event.target.value as DownloadFormat)
+          }
+          aria-label="Download format"
+          className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition-colors hover:border-slate-300 focus:border-slate-400"
+        >
+          {downloadFormats.map((format) => (
+            <option key={format} value={format}>
+              {format.toUpperCase()}
+            </option>
+          ))}
+        </select>
+        <PrimaryButton
+          tone="neutral"
+          onClick={onDownloadSample}
+          disabled={!canDownload}
+        >
+          Download Sample
         </PrimaryButton>
 
         <div className="ml-auto flex items-center gap-3 text-sm text-slate-500">
@@ -586,6 +653,7 @@ function App() {
 
   const [targetK, setTargetK] = useState(defaultK);
   const [speed, setSpeed] = useState<number>(defaultSpeed);
+  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('csv');
 
   const [incomingStream, setIncomingStream] = useState<StreamItem[]>([]);
   const [reservoir, setReservoir] = useState<string[]>([]);
@@ -609,6 +677,7 @@ function App() {
   const canPause = simulationStatus === 'Running';
   const canResume = simulationStatus === 'Paused';
   const canReset = simulationStatus !== 'Idle';
+  const canDownload = reservoir.length > 0;
 
   const reservoirItems: ReservoirItem[] = useMemo(
     () =>
@@ -954,6 +1023,13 @@ function App() {
     socketRef.current?.emit('SET_SPEED', { speed: value });
   };
 
+  const handleDownloadSample = () => {
+    if (reservoir.length === 0) {
+      return;
+    }
+    downloadReservoirSample(reservoir, targetK, downloadFormat);
+  };
+
   return (
     <main className="min-h-screen bg-canvas px-6 py-8 text-slate-800">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
@@ -977,14 +1053,18 @@ function App() {
           kInput={targetK}
           kEditable={kEditable}
           speed={speed}
+          downloadFormat={downloadFormat}
           canStart={canStart}
           canPause={canPause}
           canResume={canResume}
           canReset={canReset}
+          canDownload={canDownload}
           onFileChange={handleFileChange}
           onUpload={handleUpload}
           onKChange={handleKChange}
           onSpeedChange={handleSpeedChange}
+          onDownloadFormatChange={setDownloadFormat}
+          onDownloadSample={handleDownloadSample}
           onStart={handleStart}
           onPause={handlePause}
           onResume={handleResume}
