@@ -149,18 +149,8 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-function escapeCsvValue(value: string): string {
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-function buildReservoirExport(items: string[], format: DownloadFormat): string {
-  if (format === 'csv') {
-    return ['item', ...items.map(escapeCsvValue)].join('\r\n');
-  }
-  return items.join('\n');
+function buildReservoirExport(items: string[]): string {
+  return items.join('\n') + (items.length > 0 ? '\n' : '');
 }
 
 function downloadReservoirSample(
@@ -168,7 +158,7 @@ function downloadReservoirSample(
   targetK: number,
   format: DownloadFormat
 ) {
-  const content = buildReservoirExport(items, format);
+  const content = buildReservoirExport(items);
   const mimeType = format === 'csv' ? 'text/csv;charset=utf-8' : 'text/plain;charset=utf-8';
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);

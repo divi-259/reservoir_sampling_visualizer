@@ -576,60 +576,41 @@ User selects the desired export format before downloading.
 
 ### Export Behavior
 
-#### CSV Export
+#### CSV / DAT Export
 
-Generate:
+Both formats write the sampled records one per line, exactly as they
+arrived from the source file. The frontend does not re-escape, re-quote,
+or insert a synthetic header — that would clobber the original
+delimiter (`,`, `%`, `|`, `::`, tab, etc.) and collapse multi-column
+rows into a single quoted cell.
 
-```csv
-item
-Ace Ventura: When Nature Calls (1995)
-Jumanji (1995)
-Grumpier Old Men (1995)
+Example, for a 3-column comma-delimited source:
+
+```text
+1,1193,5
+2,2762,4
+3,1287,5
 ...
 ```
 
 Requirements:
 
-* Include a header row.
-* Escape commas and quotes correctly.
-* Preserve original item text.
+* One record per line, verbatim.
+* No header row injected by the exporter — if the source had a header
+  and it happened to be sampled, it appears like any other record.
+* Original delimiter is preserved automatically because the raw line
+  is emitted unchanged.
 
 Filename format:
 
 ```text
-reservoir-sample-k10.csv
+reservoir-sample-k{K}.csv
+reservoir-sample-k{K}.dat
 ```
 
-where:
-
-```text
-k = current reservoir size
-```
-
----
-
-#### DAT Export
-
-Generate:
-
-```text
-Ace Ventura: When Nature Calls (1995)
-Jumanji (1995)
-Grumpier Old Men (1995)
-...
-```
-
-Requirements:
-
-* One record per line.
-* No header row.
-* Preserve original item text.
-
-Filename format:
-
-```text
-reservoir-sample-k10.dat
-```
+where `K` is the configured reservoir size (the `K` input value), not
+the number of items currently filled. The two formats differ only in
+file extension and MIME type (`text/csv` vs `text/plain`).
 
 ---
 
