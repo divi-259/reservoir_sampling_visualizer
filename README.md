@@ -49,7 +49,7 @@ If `START_SIMULATION` is called with no `uploadId` (or an unknown one), the engi
 
 - React + TypeScript + Vite + Tailwind, with the UI in `App.tsx`.
 - Connects via `socket.io-client` to `http://localhost:3001`, subscribes to every simulation event, and renders five panels:
-  - **Control Panel** — file picker, K input, Start / Pause / Resume / Reset, live speed selector.
+  - **Control Panel** — file picker, K input, Start / Pause / Resume / Reset, live speed selector (0.25× – 100×, including 16× / 32× / 64×), and a Download Sample button with a CSV / DAT format toggle that exports the current reservoir verbatim (no header injected, original delimiter preserved) as `reservoir-sample-k{K}.{csv|dat}`.
   - **Incoming Stream** — rolling window of the most recently processed items.
   - **Reservoir Panel** — current reservoir contents, responsive grid that scales with K. Long records are truncated via `getDisplayLabel()` with hover tooltips showing the full row (MovieLens `19%Title (Year)` records are parsed to a cleaner title).
   - **Statistics Panel** — processed items, reservoir size, current item, simulation status.
